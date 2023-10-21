@@ -15,7 +15,7 @@ std::vector<int> ShortestPathsSolver::dijkstra(int start) {
         if (curr_dist > distances[curr_vertex])
             continue;
 
-        for (const Edge& edge : graph.at(curr_vertex)) {
+        for (const Edge& edge : graph[curr_vertex]) {
             int new_dist = curr_dist + edge.weight;
             if (new_dist < distances[edge.target]) {
                 distances[edge.target] = new_dist;

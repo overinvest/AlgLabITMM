@@ -20,6 +20,16 @@ private:
 public:
     ShortestPathsSolver(const Graph& g) : graph(g) {}
 
+    ShortestPathsSolver() {}
+
+    void setGraph(const Graph& g) {
+        graph = g;
+    }
+
+    void clearGraph() {
+        graph.clear();
+    }
+
     std::vector<int> dijkstra(int start);
 
     std::vector<int> bellmanFord(int start);
