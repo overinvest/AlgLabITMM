@@ -3,6 +3,7 @@
 #include <limits>
 #include <queue>
 #include <iostream>
+#include <omp.h>
 
 // Структура для представления ребра
 struct Edge {
@@ -33,6 +34,8 @@ public:
     std::vector<int> dijkstra(int start);
 
     std::vector<int> bellmanFord(int start);
+    std::vector<int> dijkstraParallel(int start);
+    std::vector<int> bellmanFordParallel(int start);
 
     void drawGraph() const {
         for (const auto& entry : graph) {
