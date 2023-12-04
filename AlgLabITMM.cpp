@@ -10,307 +10,472 @@
 #include <fstream>
 #include <iomanip>
 #include <functional>
+#include <random>
+#include <cmath>
+#include <cassert>
 
-using namespace std;
-using namespace std::chrono;
-
-Graph generateGraph(int n, int m, int q, int r) {
+Graph createGraph(int n, int m, int q, int r) {
     Graph graph;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(q, r);
 
-#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-        vector<Edge> edges;
-        for (int j = 0; j < m; ++j) {
-            if (i != j && edges.size() < n - 1) { // Ensure edges for a vertex don't exceed n - 1
-                int weight = rand() % r + q;
+        std::vector<Edge> edges;
+        for (int j = 0; j < n; ++j) {
+            if (i != j) { // Убедитесь, что ребра для вершины не превышают n - 1
+                int weight = dis(gen);
                 edges.push_back({ j, weight });
             }
         }
-
-#pragma omp critical
-        {
-            graph[i] = edges;
-        }
+        graph[i] = edges;
     }
 
     return graph;
 }
 
+// n = 1, ..., 10^4 + 1, 100
+// m = n^2 / 2
+// r = 10^6
+// q = 1
 
-// Функция для преобразования времени в строку
-std::string timeToString(const std::chrono::system_clock::time_point& timePoint) {
-    std::time_t time = std::chrono::system_clock::to_time_t(timePoint);
-    std::tm tmInfo;
-    localtime_s(&tmInfo, &time);
+//void experiment_1(ShortestPathsSolver path) {
+//    for (int n = 1; n <= 10001; n += 100) {
+//        int m = (n * n) / 2;
+//        int r = 10^6;
+//        int q = 1;
+//
+//        // Создание графа и заполнение его ребрами
+//        Graph graph1 = path.createGraph(n, m, q, r);
+//
+//        // Запуск алгоритма Дейкстры и измерение времени выполнения
+//        auto start = std::chrono::high_resolution_clock::now();
+//        path.setGraph(graph1);
+//        path.dijkstra(0);
+//        auto end = std::chrono::high_resolution_clock::now();
+//        std::chrono::duration<double> diff = end - start;
+//        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+//
+//        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+//        start = std::chrono::high_resolution_clock::now();
+//        path.setGraph(graph1);
+//        path.bellmanFord(0);
+//        end = std::chrono::high_resolution_clock::now();
+//        diff = end - start;
+//        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+//    }
+//}
 
-    // Форматирование времени в строку
-    char buffer[80];
-    std::strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", &tmInfo);
-    return std::string(buffer);
-}
+void experiment_1_a() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
 
-void saveResultsToFile(const std::vector<int>& n_values, vector<double>& time_a, vector<double>& time_b, const string& filename) {
-
-    ofstream file(filename);
-
-    if (file.is_open()) {
-        for (size_t i = 0; i < n_values.size(); ++i) {
-            file << n_values[i] << " " << time_a[i] << " " << time_b[i] << endl;
-        }
-        file.close();
-    }
-    else {
-        cerr << "Unable to open file for writing." << endl;
-    }
-}
-
-
-void experiment_1_d() {
-    cout << "Experiment 1 Djikstra" << endl;
-    const int q = 1;
-    const int r = 1000000;
-
-    vector<int> n_values;
-    vector<double> times_a_dijkstra;
-    vector<double> times_b_dijkstra;
-
-    ShortestPathsSolver solver_a;
-    ShortestPathsSolver solver_b;
-
-    high_resolution_clock::time_point start_time, end_time;
+    ShortestPathsSolver solver_a, solver_b;
 
     for (int n = 1; n <= 10001; n += 100) {
-        const int m_a = n * n / 10;
-        const int m_b = n * n;
 
-        Graph graph_a = generateGraph(n, m_a, q, r);
-        Graph graph_b = generateGraph(n, m_b, q, r);
+        std::cout << n << std::endl;
 
-        solver_a.setGraph(graph_a);
-        solver_b.setGraph(graph_b);
+        int m = (n * n) / 2;
+        int r = std::pow(10, 6);
+        int q = 1;
 
-        // Dijkstra
-        start_time = high_resolution_clock::now();
-        vector<int> distances_a;
-        distances_a.reserve(n); // Предварительное выделение памяти
-        distances_a = solver_a.dijkstra(0);
-        end_time = high_resolution_clock::now();
-        duration<double> time_a = end_time - start_time;
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
 
-        // Dijkstra
-        start_time = high_resolution_clock::now();
-        vector<int> distances_b;
-        distances_b.reserve(n); // Предварительное выделение памяти
-        distances_b = solver_b.dijkstra(0);
-        end_time = high_resolution_clock::now();
-        duration<double> time_b = end_time - start_time;
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
 
-        double time_dijkstra_a = time_a.count();
-        double time_dijkstra_b = time_b.count();
-
-
-        cout << "n = " << n << ", m_a = " << m_a << ", m_b = " << m_b << endl;
-        cout << "Dijkstra (m = n^2/10): " << fixed << setprecision(9) << time_dijkstra_a << " seconds" << endl;
-        cout << "Dijkstra (m = n^2): " << time_dijkstra_b << " seconds" << endl;
-
-        n_values.push_back(n);
-        times_a_dijkstra.push_back(time_dijkstra_a);
-        times_b_dijkstra.push_back(time_dijkstra_b);
-
-
-        // Очистка памяти
-        distances_a.clear();
-        distances_b.clear();
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
         solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
         solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
     }
 
-    saveResultsToFile(n_values, times_a_dijkstra, times_b_dijkstra, "Experiment_1_Dijkstra.txt");
+    // Сохранение результатов в файл
+    std::ofstream file("results_1_a.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "n = " << 1 + 100 * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
 }
 
 void experiment_1_b() {
-    cout << "Experiment 1 Bellman" << endl;
-    const int q = 1;
-    const int r = 1000000;
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
 
-    vector<int> n_values;
-
-    vector<double> times_a_bellman;
-    vector<double> times_b_bellman;
-
-    ShortestPathsSolver solver_a;
-    ShortestPathsSolver solver_b;
-
-    high_resolution_clock::time_point start_time, end_time;
+    ShortestPathsSolver solver_a, solver_b;
 
     for (int n = 1; n <= 10001; n += 100) {
-        const int m_a = n * n / 10;
-        const int m_b = n * n;
 
-        Graph graph_a = generateGraph(n, m_a, q, r);
-        Graph graph_b = generateGraph(n, m_b, q, r);
+        std::cout << n << std::endl;
 
-        solver_a.setGraph(graph_a);
-        solver_b.setGraph(graph_b);
+        int m = (n * n);
+        int r = std::pow(10,6);
+        int q = 1;
 
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
 
-        // Bellman-Ford
-        start_time = high_resolution_clock::now();
-        vector<int> distances_a_bellman;
-        distances_a_bellman.reserve(n); // Предварительное выделение памяти
-        distances_a_bellman = solver_a.bellmanFord(0);
-        end_time = high_resolution_clock::now();
-        duration<double> time_a_bellman = end_time - start_time;
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
 
-        // Bellman-Ford
-        start_time = high_resolution_clock::now();
-        vector<int> distances_b_bellman;
-        distances_b_bellman.reserve(n); // Предварительное выделение памяти
-        distances_b_bellman = solver_b.bellmanFord(0);
-        end_time = high_resolution_clock::now();
-        duration<double> time_b_bellman = end_time - start_time;
-
-        double time_bellman_a = time_a_bellman.count();
-        double time_bellman_b = time_b_bellman.count();
-
-        cout << "n = " << n << ", m_a = " << m_a << ", m_b = " << m_b << endl;
-        cout << "Bellman (m = n^2/10): " << fixed << setprecision(9) << time_bellman_a << " seconds" << endl;
-        cout << "Bellman (m = n^2): " << time_bellman_b << " seconds" << endl;
-
-        n_values.push_back(n);
-        times_a_bellman.push_back(time_bellman_a);
-        times_b_bellman.push_back(time_bellman_b);
-
-        // Очистка памяти
-        distances_a_bellman.clear();
-        distances_b_bellman.clear();
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
         solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
         solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
     }
 
-    saveResultsToFile(n_values, times_a_bellman, times_b_bellman, "Experiment_1_Bellman.txt");
+    // Сохранение результатов в файл
+    std::ofstream file("results_1_b.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "n = " << 1 + 100*i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
 }
 
-void experiment(const std::vector<int>& n_values, std::function<int(int)> m_func, int q, int r, const std::string& experiment_name) {
-    std::vector<double> times_dijkstra(n_values.size(), 0.0); // Локальные времена для каждого потока
-    std::vector<double> times_bellman(n_values.size(), 0.0);
+void experiment_2_a() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
 
-    std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
-    std::string timeString = timeToString(currentTime);
-    cout << "[" << timeString << "] Start " << experiment_name << "\n";
+    ShortestPathsSolver solver_a, solver_b;
 
-    // Убираем общие переменные для обоих солверов из разделяемой области
-#pragma omp parallel
-    {
-        ShortestPathsSolver solver_a, solver_b;
+    for (int n = 101; n <= 10001; n += 100) {
 
-        #pragma omp for schedule(dynamic)
-        for (int i = 0; i < n_values.size(); ++i) {
-            int n = n_values[i];
-            int m_a = m_func(n);
-            auto graph_a = generateGraph(n, m_a, q, r);
+        std::cout << n << std::endl;
 
-            auto start_time = std::chrono::high_resolution_clock::now();
-            solver_a.setGraph(graph_a);
-            solver_a.dijkstraParallel(0);
-            auto end_time = std::chrono::high_resolution_clock::now();
-            times_dijkstra[i] = std::chrono::duration<double>(end_time - start_time).count();
+        int m = 100*n;
+        int r = std::pow(10, 6);
+        int q = 1;
 
-            // Локальные выводы для каждого потока
-            #pragma omp critical
-            {
-                cout << "[" << experiment_name << "] dijkstra data n = " << n << " m = " << m_a << " time = " << times_dijkstra[i] << "\n";
-            }
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
+
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
+
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
+        solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
+        solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
+    }
+
+    // Сохранение результатов в файл
+    std::ofstream file("results_2_a.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "n = " << 101 + 100*i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
+}
+
+void experiment_2_b() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
+
+    ShortestPathsSolver solver_a, solver_b;
+
+    for (int n = 101; n <= 10001; n += 100) {
+
+        std::cout << n << std::endl;
+
+        int m = 1000 * n;
+        int r = std::pow(10, 6);
+        int q = 1;
+
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
+
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
+
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
+        solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
+        solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
+    }
+
+    // Сохранение результатов в файл
+    std::ofstream file("results_2_b.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "n = " << 101 + 100 * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
+}
+
+void experiment_3() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
+
+    ShortestPathsSolver solver_a, solver_b;
+
+    for (int m = 0; m <= std::pow(10, 7); m += std::pow(10, 5)) {
+
+        int n = 10001;
+        int r = std::pow(10, 6);
+        int q = 1;
+
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
+
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
+
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
+        solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
+        solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
+    }
+
+    // Сохранение результатов в файл
+    std::ofstream file("results_3.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "m = " << std::pow(10, 5) * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
+}
+
+void experiment_4_a() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
+
+    ShortestPathsSolver solver_a, solver_b;
+
+    for (int r = 1; r <= 200; ++r) {
+
+        int n = 10001;
+        int m = n * n;
+        int q = 1;
+
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
+
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
+
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
+        solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
+        solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
+    }
+
+    // Сохранение результатов в файл
+    std::ofstream file("results_4_a.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "r = " << i + 1 << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
+}
+
+void experiment_4_b() {
+    std::vector<double> dijkstraTime;
+    std::vector<double> bellmanFordTime;
+
+    ShortestPathsSolver solver_a, solver_b;
+
+    for (int r = 1; r <= 200; ++r) {
+
+        int n = 10001;
+        int m = n * n;
+        int q = 1;
+
+        // Создание графа и заполнение его ребрами
+        Graph graph = createGraph(n, m, q, r);
+
+        // Запуск алгоритма Дейкстры и измерение времени выполнения
+
+        auto start = std::chrono::high_resolution_clock::now();
+        solver_a.setGraph(graph);
+        solver_a.dijkstra(0);
+        solver_a.clearGraph();
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> diff = end - start;
+        dijkstraTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
+
+        start = std::chrono::high_resolution_clock::now();
+        solver_b.setGraph(graph);
+        solver_b.bellmanFord(0);
+        solver_b.clearGraph();
+        end = std::chrono::high_resolution_clock::now();
+        diff = end - start;
+        bellmanFordTime.push_back(diff.count());
+
+        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+
+        graph.clear();
+
+    }
+
+    // Сохранение результатов в файл
+    std::ofstream file("results_4_b.txt");
+    for (int i = 0; i < dijkstraTime.size(); ++i) {
+        file << "n = " << i + 1 << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
+    }
+    file.close();
+}
+
+void test() {
+    // Создаем граф
+    int n = 5, m = 10, q = 1, r = 10;
+    Graph g = createGraph(n, m, q, r);
+
+    // Проверяем, что граф создан правильно
+    assert(g.size() == n);
+    for (int i = 0; i < n; ++i) {
+        assert(g[i].size() == n - 1);
+        for (const Edge& edge : g[i]) {
+            assert(edge.target != i);
+            assert(edge.weight >= q && edge.weight <= r);
         }
-
-        #pragma omp for schedule(dynamic)
-        for (int i = 0; i < n_values.size(); ++i) {
-            int n = n_values[i];
-            int m_a = m_func(n);
-            auto graph_a = generateGraph(n, m_a, q, r);
-
-            auto start_time = std::chrono::high_resolution_clock::now();
-            solver_b.setGraph(graph_a);
-            solver_b.bellmanFordParallel(0);
-            auto end_time = std::chrono::high_resolution_clock::now();
-            times_bellman[i] = std::chrono::duration<double>(end_time - start_time).count();
-
-            // Локальные выводы для каждого потока
-            #pragma omp critical
-            {
-
-                cout << "[" << experiment_name << "] bellman data n = " << n << " m = " << m_a << " time = " << times_bellman[i] << "\n";
-            }
-        }
     }
 
-    currentTime = std::chrono::system_clock::now();
-    timeString = timeToString(currentTime);
-    cout << "[" << timeString << "] Ended " << experiment_name << "\n";
+    // Создаем экземпляр решателя
+    ShortestPathsSolver solver(g);
 
-    saveResultsToFile(n_values, times_dijkstra, times_bellman, experiment_name);
+    // Проверяем алгоритм Дейкстры
+    std::vector<int> dijkstraDistances = solver.dijkstra(0);
+    assert(dijkstraDistances.size() == n);
+
+    // Проверяем алгоритм Беллмана-Форда
+    std::vector<int> bellmanFordDistances = solver.bellmanFord(0);
+    assert(bellmanFordDistances.size() == n);
+
+    // Проверяем, что оба алгоритма дают одинаковые результаты
+    assert(dijkstraDistances == bellmanFordDistances);
+
+    solver.drawGraph();
 }
-
-
-int m_a(int n) {
-    return n * n / 10;
-}
-
-int m_b(int n) {
-    return n * n;
-}
-
-int m_c(int n) {
-    return 100 * n;
-}
-
-int m_d(int n) {
-    return 1000 * n;
-}
-
-int m_e(int m) {
-    return m;
-}
-
-int m_f(int m) {
-    return m;
-}
-
-std::vector<int> r_values() {
-    std::vector<int> values;
-    for (int i = 1; i <= 200; ++i) {
-        values.push_back(i);
-    }
-    return values;
-}
-
-int m_g(int n) {
-    return n * n;
-}
-
-int m_h(int n) {
-    return 1000 * n;
-}
-
 
 int main() {
     setlocale(LC_ALL, "Russian");
-    
-    std::vector<int> n_values;
-    #pragma omp parallel for
-    for (int i = 1; i <= 10000; i += 100) {
-        n_values.push_back(i);
-    }
-    int q = 1;
-    int r = 1000000;
 
-    std::thread thread_a(experiment, n_values, m_a, q, r, "Experiment 1. a");
-    std::thread thread_b(experiment, n_values, m_b, q, r, "Experiment 1. b");
+    // experiment_1_a(); // DONE
+    // experiment_1_b(); // DONE
+    // experiment_2_a(); // DONE
+    /*experiment_2_b();
+    experiment_3();
+    experiment_4_a();
+    experiment_4_b();*/
 
-    thread_a.join();
-    thread_b.join();
-
-    //n_values.clear();
+    test();
+    std::cout << "Все тесты прошли успешно!" << std::endl;
 
     return 0;
 }
