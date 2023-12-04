@@ -1,6 +1,7 @@
 #include "ShortestPathsSolver.h"
 #include <random>
 #include <chrono>
+#include <set>
 
 std::vector<int> ShortestPathsSolver::dijkstra(int start) {
     std::vector<int> distances(graph.size(), std::numeric_limits<int>::max());
@@ -17,7 +18,13 @@ std::vector<int> ShortestPathsSolver::dijkstra(int start) {
         if (curr_dist > distances[curr_vertex])
             continue;
 
+        if (curr_vertex >= graph.size())
+            continue;
+
         for (const Edge& edge : graph[curr_vertex]) {
+            if (edge.target >= graph.size())
+                continue;
+
             int new_dist = curr_dist + edge.weight;
             if (new_dist < distances[edge.target]) {
                 distances[edge.target] = new_dist;
@@ -28,6 +35,7 @@ std::vector<int> ShortestPathsSolver::dijkstra(int start) {
 
     return distances;
 }
+
 
 std::vector<int> ShortestPathsSolver::bellmanFord(int start) {
     std::vector<int> distances(graph.size(), std::numeric_limits<int>::max());
@@ -42,9 +50,16 @@ std::vector<int> ShortestPathsSolver::bellmanFord(int start) {
             int u = q->front();
             q->pop();
             if (distances[u] == std::numeric_limits<int>::max()) continue; // Skip unreachable nodes
+
+            if (u >= graph.size())
+                continue;
+
             for (const Edge& edge : graph[u]) {
                 int v = edge.target;
                 int weight = edge.weight;
+                if (v >= graph.size())
+                    continue;
+
                 if (distances[u] + weight < distances[v]) {
                     distances[v] = distances[u] + weight;
                     next->push(v);
@@ -58,10 +73,17 @@ std::vector<int> ShortestPathsSolver::bellmanFord(int start) {
     // Проверка наличия отрицательных циклов
     for (const auto& entry : graph) {
         int u = entry.first;
+
+        if (u >= graph.size())
+            continue;
+
         if (distances[u] == std::numeric_limits<int>::max()) continue; // Skip unreachable nodes
         for (const Edge& edge : entry.second) {
             int v = edge.target;
             int weight = edge.weight;
+            if (v >= graph.size())
+                continue;
+
             if (distances[u] + weight < distances[v]) {
                 std::cout << "Граф содержит отрицательный цикл!" << std::endl;
                 return {};
@@ -71,3 +93,5 @@ std::vector<int> ShortestPathsSolver::bellmanFord(int start) {
 
     return distances;
 }
+
+

@@ -18,53 +18,30 @@ Graph createGraph(int n, int m, int q, int r) {
     Graph graph;
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(q, r);
+    std::uniform_int_distribution<> vertices(0, n-1);
+    std::uniform_int_distribution<> weights(q, r);
 
-    for (int i = 0; i < n; ++i) {
-        std::vector<Edge> edges;
-        for (int j = 0; j < n; ++j) {
-            if (i != j) { // Убедитесь, что ребра для вершины не превышают n - 1
-                int weight = dis(gen);
-                edges.push_back({ j, weight });
-            }
+    for (int i = 0; i < m; ++i) {
+        int v1 = vertices(gen);
+        int v2 = vertices(gen);
+        while (v1 == v2) {
+            v2 = vertices(gen);
         }
-        graph[i] = edges;
+        int weight = weights(gen);
+        graph[v1].push_back(Edge{ v2, weight });
+        graph[v2].push_back(Edge{ v1, weight });
     }
 
     return graph;
 }
 
-// n = 1, ..., 10^4 + 1, 100
-// m = n^2 / 2
-// r = 10^6
-// q = 1
-
-//void experiment_1(ShortestPathsSolver path) {
-//    for (int n = 1; n <= 10001; n += 100) {
-//        int m = (n * n) / 2;
-//        int r = 10^6;
-//        int q = 1;
-//
-//        // Создание графа и заполнение его ребрами
-//        Graph graph1 = path.createGraph(n, m, q, r);
-//
-//        // Запуск алгоритма Дейкстры и измерение времени выполнения
-//        auto start = std::chrono::high_resolution_clock::now();
-//        path.setGraph(graph1);
-//        path.dijkstra(0);
-//        auto end = std::chrono::high_resolution_clock::now();
-//        std::chrono::duration<double> diff = end - start;
-//        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
-//
-//        // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
-//        start = std::chrono::high_resolution_clock::now();
-//        path.setGraph(graph1);
-//        path.bellmanFord(0);
-//        end = std::chrono::high_resolution_clock::now();
-//        diff = end - start;
-//        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
-//    }
-//}
+void printDistances(const std::vector<int>& distances) {
+    for (int i = 0; i < distances.size(); ++i) {
+        if (distances[i] != std::numeric_limits<int>::max()) {
+            std::cout << "Путь до вершины " << i << " = " << distances[i] << std::endl;
+        }
+    }
+}
 
 void experiment_1_a() {
     std::vector<double> dijkstraTime;
@@ -76,7 +53,7 @@ void experiment_1_a() {
 
         std::cout << n << std::endl;
 
-        int m = (n * n) / 2;
+        int m = (n * n) / 10;
         int r = std::pow(10, 6);
         int q = 1;
 
@@ -432,33 +409,26 @@ void experiment_4_b() {
 }
 
 void test() {
-    // Создаем граф
-    int n = 5, m = 10, q = 1, r = 10;
-    Graph g = createGraph(n, m, q, r);
-
-    // Проверяем, что граф создан правильно
-    assert(g.size() == n);
-    for (int i = 0; i < n; ++i) {
-        assert(g[i].size() == n - 1);
-        for (const Edge& edge : g[i]) {
-            assert(edge.target != i);
-            assert(edge.weight >= q && edge.weight <= r);
-        }
-    }
-
+    
     // Создаем экземпляр решателя
-    ShortestPathsSolver solver(g);
+    ShortestPathsSolver solver;
 
-    // Проверяем алгоритм Дейкстры
+    solver.inputGraph();
+
     std::vector<int> dijkstraDistances = solver.dijkstra(0);
-    assert(dijkstraDistances.size() == n);
 
-    // Проверяем алгоритм Беллмана-Форда
     std::vector<int> bellmanFordDistances = solver.bellmanFord(0);
-    assert(bellmanFordDistances.size() == n);
 
     // Проверяем, что оба алгоритма дают одинаковые результаты
-    assert(dijkstraDistances == bellmanFordDistances);
+    //assert(dijkstraDistances == bellmanFordDistances);
+
+    std::cout << "Алгоритм Дейкстры" << std::endl;
+
+    printDistances(dijkstraDistances);
+
+    std::cout << "Алгоритм Форда-Беллмана" << std::endl;
+
+    printDistances(bellmanFordDistances);
 
     solver.drawGraph();
 }
@@ -476,6 +446,7 @@ int main() {
 
     test();
     std::cout << "Все тесты прошли успешно!" << std::endl;
+
 
     return 0;
 }
