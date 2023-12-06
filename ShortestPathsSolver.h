@@ -75,6 +75,8 @@ public:
         }
     }
 
+    void CreateGraph(int n, int m, int q, int r);
+
 };
 
 //0 1 1

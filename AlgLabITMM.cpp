@@ -16,24 +16,42 @@
 
 Graph createGraph(int n, int m, int q, int r) {
     Graph graph;
+
+    for (int i = 0; i < n; ++i) {
+        graph[i] = std::vector<Edge>();
+    }
+
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> vertices(0, n-1);
+    std::uniform_int_distribution<> vertices(0, n - 1);
     std::uniform_int_distribution<> weights(q, r);
 
-    for (int i = 0; i < m; ++i) {
-        int v1 = vertices(gen);
-        int v2 = vertices(gen);
-        while (v1 == v2) {
-            v2 = vertices(gen);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            int v = vertices(gen);
+            int weight = weights(gen);
+            bool exists = false;
+
+            while (v == j && exists == true) {
+                v = vertices(gen);
+
+                for (const auto& e : graph[i]) {
+                    if (e.target == v) {
+                        exists = true;
+                        break;
+                    }
+                }
+            }
+
+            Edge edge = { v, weight };
+
+            graph[i].push_back(edge);
         }
-        int weight = weights(gen);
-        graph[v1].push_back(Edge{ v2, weight });
-        graph[v2].push_back(Edge{ v1, weight });
     }
 
     return graph;
 }
+
 
 void printDistances(const std::vector<int>& distances) {
     for (int i = 0; i < distances.size(); ++i) {
@@ -44,47 +62,43 @@ void printDistances(const std::vector<int>& distances) {
 }
 
 void experiment_1_a() {
+
+    std::cout << "Запустился 1 эксперимент буква а" << std::endl;
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int n = 1; n <= 10001; n += 100) {
-
-        std::cout << n << std::endl;
 
         int m = (n * n) / 10;
         int r = std::pow(10, 6);
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -94,50 +108,49 @@ void experiment_1_a() {
         file << "n = " << 1 + 100 * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 1а завершился" << std::endl;
 }
 
 void experiment_1_b() {
+
+    std::cout << "Запустился 1 эксперимент буква б" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int n = 1; n <= 10001; n += 100) {
-
-        std::cout << n << std::endl;
 
         int m = (n * n);
         int r = std::pow(10,6);
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -147,50 +160,49 @@ void experiment_1_b() {
         file << "n = " << 1 + 100*i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 1б завершился" << std::endl;
 }
 
 void experiment_2_a() {
+
+    std::cout << "Запустился 2 эксперимент буква а" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int n = 101; n <= 10001; n += 100) {
-
-        std::cout << n << std::endl;
 
         int m = 100*n;
         int r = std::pow(10, 6);
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -200,50 +212,49 @@ void experiment_2_a() {
         file << "n = " << 101 + 100*i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 2а завершился" << std::endl;
 }
 
 void experiment_2_b() {
+
+    std::cout << "Запустился 2 эксперимент буква б" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int n = 101; n <= 10001; n += 100) {
-
-        std::cout << n << std::endl;
 
         int m = 1000 * n;
         int r = std::pow(10, 6);
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -253,13 +264,18 @@ void experiment_2_b() {
         file << "n = " << 101 + 100 * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 2б завершился" << std::endl;
 }
 
 void experiment_3() {
+
+    std::cout << "Запустился 3 эксперимент" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int m = 0; m <= std::pow(10, 7); m += std::pow(10, 5)) {
 
@@ -268,33 +284,29 @@ void experiment_3() {
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -304,13 +316,18 @@ void experiment_3() {
         file << "m = " << std::pow(10, 5) * i << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 3 завершился" << std::endl;
 }
 
 void experiment_4_a() {
+
+    std::cout << "Запустился 4 эксперимент буква а" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int r = 1; r <= 200; ++r) {
 
@@ -319,33 +336,29 @@ void experiment_4_a() {
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -355,13 +368,18 @@ void experiment_4_a() {
         file << "r = " << i + 1 << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 4а завершился" << std::endl;
 }
 
 void experiment_4_b() {
+
+    std::cout << "Запустился 4 эксперимент буква б" << std::endl;
+
     std::vector<double> dijkstraTime;
     std::vector<double> bellmanFordTime;
 
-    ShortestPathsSolver solver_a, solver_b;
+    ShortestPathsSolver solver;
 
     for (int r = 1; r <= 200; ++r) {
 
@@ -370,33 +388,29 @@ void experiment_4_b() {
         int q = 1;
 
         // Создание графа и заполнение его ребрами
-        Graph graph = createGraph(n, m, q, r);
+        solver.CreateGraph(n, m, q, r);
 
         // Запуск алгоритма Дейкстры и измерение времени выполнения
 
         auto start = std::chrono::high_resolution_clock::now();
-        solver_a.setGraph(graph);
-        solver_a.dijkstra(0);
-        solver_a.clearGraph();
+        solver.dijkstra(0);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> diff = end - start;
         dijkstraTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Дейкстры для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
         // Запуск алгоритма Беллмана-Форда и измерение времени выполнения
 
         start = std::chrono::high_resolution_clock::now();
-        solver_b.setGraph(graph);
-        solver_b.bellmanFord(0);
-        solver_b.clearGraph();
+        solver.bellmanFord(0);
         end = std::chrono::high_resolution_clock::now();
         diff = end - start;
         bellmanFordTime.push_back(diff.count());
 
-        std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
+        //std::cout << "Время выполнения алгоритма Беллмана-Форда для графа с " << m << " ребрами и верхней границей веса " << r << ": " << diff.count() << " секунд" << std::endl;
 
-        graph.clear();
+        solver.clearGraph();
 
     }
 
@@ -406,6 +420,8 @@ void experiment_4_b() {
         file << "n = " << i + 1 << ", Dijkstra time = " << dijkstraTime[i] << ", Bellman-Ford time = " << bellmanFordTime[i] << std::endl;
     }
     file.close();
+
+    std::cout << "Эксперимент 4б завершился" << std::endl;
 }
 
 void test() {
@@ -413,7 +429,14 @@ void test() {
     // Создаем экземпляр решателя
     ShortestPathsSolver solver;
 
-    solver.inputGraph();
+    int n = 10;
+    int m = 5;
+    int q = 1;
+    int r = 10;
+
+    // solver.inputGraph();
+
+    solver.CreateGraph(n, m, q, r);
 
     std::vector<int> dijkstraDistances = solver.dijkstra(0);
 
@@ -436,13 +459,13 @@ void test() {
 int main() {
     setlocale(LC_ALL, "Russian");
 
-    // experiment_1_a(); // DONE
-    // experiment_1_b(); // DONE
-    // experiment_2_a(); // DONE
-    /*experiment_2_b();
-    experiment_3();
-    experiment_4_a();
-    experiment_4_b();*/
+    experiment_1_a(); // DONE
+    //experiment_1_b(); // DONE
+    //experiment_2_a(); // DONE
+    //experiment_2_b();
+    //experiment_3();
+    //experiment_4_a();
+    //experiment_4_b();
 
     test();
     std::cout << "Все тесты прошли успешно!" << std::endl;

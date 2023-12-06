@@ -94,4 +94,26 @@ std::vector<int> ShortestPathsSolver::bellmanFord(int start) {
     return distances;
 }
 
+void ShortestPathsSolver::CreateGraph(int n, int m, int q, int r) {
+    for (int i = 0; i < n; ++i) {
+        graph[i] = std::vector<Edge>();
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(q, r);
+
+    for (int i = 0; i < n; ++i) {
+        std::vector<Edge> edges;
+        for (int j = 0; j < m; ++j) {
+            if (i != j) { // Убедитесь, что ребра для вершины не превышают n - 1
+                int weight = dis(gen);
+                edges.push_back({ j, weight });
+            }
+        }
+        graph[i] = edges;
+    }
+
+}
+
 
