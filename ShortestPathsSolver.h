@@ -23,6 +23,9 @@ public:
 
     ShortestPathsSolver() {}
 
+    ~ShortestPathsSolver() {
+    }
+
     void setGraph(const Graph& g) {
         graph = g;
     }
